@@ -3,12 +3,29 @@
 
 MPU6050 mpu;
 
-const float LIMIT_ANGLE = 25;
+const float LIMIT_ANGLE = 20;
 const long LIMIT_TIME = 10000;
 
 int buzzerPin = 9;
-long inclinedTime = 0;
+long inclinationStartTime = 0;
 bool inclinationDetected = false;
+
+bool isInclinationExcessive(float angle) {
+  return abs(angle) > LIMIT_ANGLE;
+}
+
+bool shouldActivateAlert() {
+  float inclinationTime = millis() - inclinationStartTime;
+
+  return inclinationTime >= LIMIT_TIME;
+}
+
+float calculateAngle(int16_t ax, int16_t ay) {
+  float restPositionAngle = 90;
+  float rawAngle = atan2(ax, ay) * 180 / PI;
+
+  return rawAngle - restPositionAngle;
+}
 
 void setupAngleSensor() {
   bool mpuIsConnected = mpu.testConnection();
@@ -32,7 +49,7 @@ void emitAlert() {
 
 void handleInclination(bool activeAlert) {
   if (!inclinationDetected) {
-    inclinedTime = millis();
+    inclinationStartTime = millis();
     inclinationDetected = true;
   }
   else if (activeAlert) {
@@ -57,14 +74,14 @@ void loop() {
   int16_t ax, ay, az;
   mpu.getAcceleration(&ax, &ay, &az);
 
-  float angle = atan2(ax, az) * 180 / PI;
-  bool isInclined = abs(angle) > LIMIT_ANGLE;
-  bool activeAlert = millis() - inclinedTime >= LIMIT_TIME; 
+  float angle = calculateAngle(ax, ay);
+  bool excessiveInclination = isInclinationExcessive(angle);
+  bool activeAlert = shouldActivateAlert(); 
 
   Serial.print("Angle X (estimated): ");
   Serial.println(angle);
 
-  if (isInclined) {
+  if (excessiveInclination) {
     handleInclination(activeAlert);
 
     return;
