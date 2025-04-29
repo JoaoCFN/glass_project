@@ -3,7 +3,7 @@
 
 MPU6050 mpu;
 
-const float LIMIT_ANGLE = 20;
+const float LIMIT_ANGLE = 15;
 const long LIMIT_TIME = 10000;
 
 int buzzerPin = 9;
@@ -11,7 +11,10 @@ long inclinationStartTime = 0;
 bool inclinationDetected = false;
 
 bool isInclinationExcessive(float angle) {
-  return abs(angle) > LIMIT_ANGLE;
+  float maximumAngle = 100;
+  float absoluteAngle = abs(angle);
+
+  return absoluteAngle > LIMIT_ANGLE && absoluteAngle <= maximumAngle;
 }
 
 bool shouldActivateAlert() {
